@@ -6,13 +6,39 @@ import (
 	"net/http"
 
 	"github.com/glofoxinc/glofox-go-takehome-task/config"
+	"github.com/glofoxinc/glofox-go-takehome-task/handler"
+	"github.com/glofoxinc/glofox-go-takehome-task/payment"
+	"github.com/glofoxinc/glofox-go-takehome-task/service"
+	"github.com/glofoxinc/glofox-go-takehome-task/storage/memory"
 )
 
 func main() {
 	logSeededPlans()
 
+	store := memory.NewStore()
+	store.SeedPlans(config.Plans)
+
+	paymentGateway := payment.AlwaysSucceedingPaymentGateway{}
+
+	purchaseService := service.NewPurchaseService(
+		store,
+		paymentGateway,
+	)
+	planService := service.NewPlanService(store)
+
 	mux := http.NewServeMux()
 	// Candidates wire their HTTP handlers here.
+
+	healthHandler := handler.NewHealthHandler()
+	planHandler := handler.NewPlanHandler(planService)
+	purchaseHandler := handler.NewPurchaseHandler(purchaseService)
+
+	mux.HandleFunc("GET /health", healthHandler.Health)
+	mux.HandleFunc("GET /v1/plans", planHandler.GetPlans)
+	mux.HandleFunc("POST /v1/memberships/purchases", purchaseHandler.CreatePurchase)
+	mux.HandleFunc("GET /v1/memberships/purchases", purchaseHandler.ListPurchases)
+	mux.HandleFunc("GET /v1/memberships/purchases/{id}", purchaseHandler.GetPurchase)
+	mux.HandleFunc("POST /v1/memberships/purchases/{id}/cancel", purchaseHandler.CancelPurchase)
 
 	addr := ":8080"
 	log.Printf("listening on %s", addr)
