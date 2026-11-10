@@ -35,6 +35,9 @@ What I covered and why:
 ## Known gaps / what I would do next
 
 - Authentication/authorization is not implemented for the APIs.
+- ⁠The current purchase flow processes payment before persisting the purchase and decrementing inventory. This keeps the implementation simple and ensures failed payments do not consume
+inventory. However, if payment succeeds but purchase persistence fails, the customer could be charged without receiving a confirmed purchase.
+In a production system, I would introduce an inventory reservation mechanism with an expiry time. The flow would be: validate request → reserve inventory → process payment using an idempotency key → confirm the purchase and finalize inventory on success, or release the reservation on failure. I would also implement payment reconciliation to handle uncertain payment outcomes and persistence failures.
 - Purchases are identified using `member_name` rather than a `member_id`. In a production system, I would use a member ID and have a separate member entity.
 - The purchase flow currently holds the service lock while waiting for the payment gateway. In a production system, I would consider making the payment operation asynchronous or using a more fine-grained concurrency approach.
 - Pagination currently sorts purchases by UUID to make results deterministic; a production implementation would ideally paginate using a meaningful field such as creation time.
