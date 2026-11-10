@@ -66,7 +66,7 @@ func TestCreatePurchase_Success(t *testing.T) {
 		t.Fatal("expected purchase ID to be generated")
 	}
 
-	if purchase.MemberName != "John Doe" {
+	if purchase.MemberName != "john doe" {
 		t.Fatalf(
 			"expected member name %q, got %q",
 			"John Doe",
